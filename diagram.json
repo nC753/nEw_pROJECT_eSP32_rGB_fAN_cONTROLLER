@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "author": "rgb_controller",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
+    { "type": "wokwi-neopixel-canvas", "id": "leds", "top": -80, "left": 150, "attrs": { "rows": "1", "cols": "30" } }
+  ],
+  "connections": [
+    [ "esp:26", "leds:DIN", "green", [ "h0" ] ],
+    [ "esp:GND.1", "leds:GND", "black", [ "h0" ] ],
+    [ "esp:3V3", "leds:VDD", "red", [ "h0" ] ]
+  ]
+}
