@@ -104,7 +104,7 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
   Serial.println(messageTemp);
 
   // --- Handle Malformed JSON safely ---
-  StaticJsonDocument<512> doc;
+  JsonDocument doc;
   DeserializationError error = deserializeJson(doc, messageTemp);
   if (error) {
     Serial.print("Failed to parse JSON. Error: ");
@@ -120,7 +120,7 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
     }
 
     // Check for Brightness Update
-    if (doc.containsKey("brightness")) {
+    if (doc["brightness"]) {
       currentBrightness = doc["brightness"]; 
       FastLED.setBrightness(map(currentBrightness, 1, 100, 0, 255));
       Serial.print("[LED] Brightness updated to: ");
@@ -128,7 +128,7 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
     }
 
     // Check for Fan Motor Speed Update
-    if (doc.containsKey("speed")) {
+    if (doc["speed"]) {
       currentFanSpeed = doc["speed"];
       ledcWrite(PWM_CHANNEL, currentFanSpeed);
       Serial.print("[MOTOR] Fan speed updated to: ");
@@ -136,7 +136,7 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
     }
 
     // Check for Hex Color Update
-    if (doc.containsKey("color")) {
+    if (doc["color"]) {
       const char* hexColor = doc["color"];
       CRGB newColor = strtol(hexColor + 1, NULL, 16); 
       fill_solid(leds, NUM_LEDS, newColor);
