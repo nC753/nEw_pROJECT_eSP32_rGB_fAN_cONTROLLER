@@ -5,4 +5,4 @@
 #DS18B20 Temperature Sensor: The digital probe that monitors your fan's environment.
 #4.7k Ohm Resistor: CRITICAL. This is a pull-up resistor required by the DS18B20 to transmit data accurately.
 #10k Ohm Resistor: Needed for the fan's tachometer (RPM) wire to ensure the ESP32 can "see" the pulses clearly without noise interfering.
-#Fan ARGB Cooler
+#Fan ARGB Cooler(WS2812B)[3x4pin]
