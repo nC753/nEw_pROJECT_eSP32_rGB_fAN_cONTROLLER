@@ -1,14 +1,35 @@
 {
   "version": 1,
-  "author": "rgb_controller",
+  "author": "Kamronbek",
   "editor": "wokwi",
   "parts": [
     { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
-    { "type": "wokwi-neopixel-canvas", "id": "leds", "top": -80, "left": 150, "attrs": { "rows": "1", "cols": "30" } }
+    { "type": "wokwi-ds18b20", "id": "temp", "top": 150, "left": -120, "attrs": {} },
+    { "type": "wokwi-resistor", "id": "pullup", "top": 80, "left": -70, "attrs": { "value": "4700" } },
+    { "type": "wokwi-neopixel-strip", "id": "rgb", "top": -120, "left": 50, "attrs": { "pixels": "16" } },
+    { "type": "wokwi-led", "id": "fan_pwm_led", "top": 150, "left": 100, "attrs": { "color": "blue", "label": "FAN PWM Speed" } },
+    { "type": "wokwi-pushbutton", "id": "tach_btn", "top": 150, "left": 200, "attrs": { "color": "green", "label": "RPM Pulse (Click me!)" } }
   ],
   "connections": [
-    [ "esp:26", "leds:DIN", "green", [ "h0" ] ],
-    [ "esp:GND.1", "leds:GND", "black", [ "h0" ] ],
-    [ "esp:3V3", "leds:VDD", "red", [ "h0" ] ]
-  ]
+    [ "esp:TX", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    
+    [ "temp:GND", "esp:GND.1", "black", [ "v0" ] ],
+    [ "temp:VDD", "esp:3V3", "red", [ "v0" ] ],
+    [ "temp:DQ", "esp:4", "yellow", [ "v0" ] ],
+    
+    [ "pullup:1", "temp:DQ", "green", [ "v0" ] ],
+    [ "pullup:2", "temp:VDD", "green", [ "v0" ] ],
+    
+    [ "rgb:GND", "esp:GND.2", "black", [ "v0" ] ],
+    [ "rgb:VDD", "esp:5V", "red", [ "v0" ] ],
+    [ "rgb:DIN", "esp:26", "green", [ "v0" ] ],
+    
+    [ "fan_pwm_led:A", "esp:15", "blue", [ "v0" ] ],
+    [ "fan_pwm_led:C", "esp:GND.3", "black", [ "v0" ] ],
+    
+    [ "tach_btn:1.l", "esp:GND.3", "black", [ "v0" ] ],
+    [ "tach_btn:2.l", "esp:32", "orange", [ "v0" ] ]
+  ],
+  "dependencies": {}
 }
