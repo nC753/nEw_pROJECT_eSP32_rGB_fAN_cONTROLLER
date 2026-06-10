@@ -3,18 +3,24 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 #include <FastLED.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
+
+// --- Current Temp Sensor Libraries (Commented out because using TMP36) ---
+// #include <OneWire.h>
+// #include <DallasTemperature.h>
+// -----------------------------------------------------------------
 
 // --- Fan Controller Hardware Pins ---
 #define LED_DATA_PIN 26      
 #define NUM_LEDS 120         
 #define FAN_PWM_PIN 15       
-#define TEMP_PIN 4           
 #define FAN_TACH_PIN 32
-#define PWM_CHANNEL 0
+#define PWM_CHANNEL 0 // (Kept for reference, but V3.0 handles channels automatically)
 #define PWM_FREQ 25000
 #define PWM_RESOLUTION 8
+
+// --- Temperature Sensor Pins ---
+// #define TEMP_PIN 4           // <-- DALLAS PIN DISABLED
+#define TMP36_PIN 34            // <-- TMP36 PIN ACTIVE
 
 // --- Network & MQTT Credentials ---
 const char* ssid = "Wokwi-GUEST";
@@ -43,11 +49,12 @@ volatile unsigned int rpmPulseCount = 0;
 unsigned long lastRPMCalcTime = 0;
 unsigned long lastTempReadTime = 0;
 
-// --- Global Objects ---
+// --- Global Objects (Dallas objects commented out for TMP36) ---
 WiFiClient espClient;
 PubSubClient mqtt_client(espClient);
-OneWire oneWire(TEMP_PIN);
-DallasTemperature tempSensor(&oneWire);
+// OneWire oneWire(TEMP_PIN);
+// DallasTemperature tempSensor(&oneWire);
+// -----------------------------------------------------------------
 
 // --- The Hardware Trap (Counts Fan Spins) ---
 void IRAM_ATTR tachometerISR() {
@@ -75,7 +82,8 @@ void publishStatus() {
 
 // --- THE BRAIN (Folder 3) ---
 void MQTT_callback(char* topic, byte* payload, unsigned int length) {
-  if (!acceptCommands) return;
+  // Ignore empty payloads to prevent parsing errors when we wipe the broker's memory
+  if (!acceptCommands || length == 0) return;
 
   JsonDocument doc;
   DeserializationError error = deserializeJson(doc, payload, length);
@@ -114,7 +122,9 @@ void MQTT_callback(char* topic, byte* payload, unsigned int length) {
   if (doc["speed"]) {
     currentFanSpeed = doc["speed"];
     int pwmValue = map(currentFanSpeed, 0, 100, 0, 255);
-    ledcWrite(PWM_CHANNEL, pwmValue);
+    
+    // V3.0 FIX: Write directly to the PIN, not the channel
+    ledcWrite(FAN_PWM_PIN, pwmValue);
     stateChanged = true;
   }
 
@@ -146,6 +156,9 @@ void connectMQTT() {
     if (mqtt_client.connect(client_id.c_str(), mqtt_username, mqtt_password)) {
       Serial.println("Connected!");
       
+      // Wipe the Azure Broker's memory of any retained "sticky" commands
+      mqtt_client.publish(topic_fan_set, "", true);
+      
       mqtt_client.subscribe(topic_fan_set);
       mqtt_client.publish(topic_fan_status, "{\"status\": \"Connected and Ready\"}");
       publishStatus();
@@ -169,23 +182,31 @@ void setup() {
   FastLED.clear(); 
   FastLED.show();
 
-  // 2. Initialize Fan Motors (ledc)
-  ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
-  ledcAttachPin(FAN_PWM_PIN, PWM_CHANNEL);
-  ledcWrite(PWM_CHANNEL, 0); 
+  // 2. Initialize Fan Motors (ESP32 Core V3.0 Update)
+  // Instead of setup() and attachPin(), V3.0 does it all in one attach() command
+  ledcAttach(FAN_PWM_PIN, PWM_FREQ, PWM_RESOLUTION);
+  ledcWrite(FAN_PWM_PIN, 0); 
 
   // 3. Initialize RPM Sensor
   pinMode(FAN_TACH_PIN, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(FAN_TACH_PIN), tachometerISR, FALLING);
 
   // 4. Initialize Temperature Sensor
-  tempSensor.begin();
-  tempSensor.setWaitForConversion(false); 
-  tempSensor.requestTemperatures();       
+  // --- DALLAS SENSOR DISABLED ---
+  // tempSensor.begin();
+  // tempSensor.setWaitForConversion(false); 
+  // tempSensor.requestTemperatures();       
+  // ------------------------------------------------------------
+  
+  // (TMP36 is analog and doesn't require library setup here)
 
   // 5. Connect Network
   connectWiFi();
   mqtt_client.setServer(mqtt_broker, mqtt_port);
+  
+  // Tell Azure to keep the connection alive for 90 seconds of silence
+  mqtt_client.setKeepAlive(90);
+  
   mqtt_client.setCallback(MQTT_callback);
   connectMQTT();
 }
@@ -211,8 +232,18 @@ void loop() {
 
   // --- READ TEMPERATURE (Every 5 seconds) ---
   if (millis() - lastTempReadTime >= 5000) {
-    currentTempC = tempSensor.getTempCByIndex(0);
-    tempSensor.requestTemperatures(); 
+    
+    // --- DALLAS SENSOR DISABLED ---
+    // currentTempC = tempSensor.getTempCByIndex(0);
+    // tempSensor.requestTemperatures(); 
+    // -----------------------------------------------------------
+
+    // --- TMP36 SENSOR ACTIVE ---
+    int adcVal = analogRead(TMP36_PIN);
+    float milliVolt = adcVal * (3300.0 / 4095.0);
+    currentTempC = (milliVolt - 500.0) / 10.0;
+    // -------------------------------------------------------
+
     lastTempReadTime = millis();
   }
 }
