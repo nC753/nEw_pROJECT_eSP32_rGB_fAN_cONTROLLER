@@ -4,32 +4,30 @@
   "editor": "wokwi",
   "parts": [
     { "type": "board-esp32-devkit-c-v4", "id": "esp", "top": 0, "left": 0, "attrs": {} },
-    { "type": "wokwi-ds18b20", "id": "temp", "top": 150, "left": -120, "attrs": {} },
-    { "type": "wokwi-resistor", "id": "pullup", "top": 80, "left": -70, "attrs": { "value": "4700" } },
-    { "type": "wokwi-neopixel-strip", "id": "rgb", "top": -120, "left": 50, "attrs": { "pixels": "16" } },
-    { "type": "wokwi-led", "id": "fan_pwm_led", "top": 150, "left": 100, "attrs": { "color": "blue", "label": "FAN PWM Speed" } },
-    { "type": "wokwi-pushbutton", "id": "tach_btn", "top": 150, "left": 200, "attrs": { "color": "green", "label": "RPM Pulse (Click me!)" } }
+    { "type": "wokwi-neopixel-matrix", "id": "rgb", "top": 100, "left": 250, "attrs": { "rows": "4", "cols": "4" } },
+    { "type": "wokwi-ds18b20", "id": "temp", "top": -200, "left": 250, "attrs": {} },
+    { "type": "wokwi-resistor", "id": "r1", "top": -120, "left": 100, "attrs": { "value": "10000" } },
+    { "type": "wokwi-servo", "id": "fan_pwm", "top": -200, "left": -250, "attrs": {} },
+    { "type": "wokwi-pushbutton", "id": "tach_btn", "top": 200, "left": -200, "attrs": { "color": "green", "label": "CLICK FOR RPM" } }
   ],
   "connections": [
-    [ "esp:TX", "$serialMonitor:RX", "", [] ],
-    [ "esp:RX", "$serialMonitor:TX", "", [] ],
+    [ "esp:26", "rgb:DIN", "green", [] ],
+    [ "esp:5V", "rgb:VDD", "red", [] ],
+    [ "esp:GND.1", "rgb:GND", "black", [] ],
     
-    [ "temp:GND", "esp:GND.1", "black", [ "v0" ] ],
-    [ "temp:VDD", "esp:3V3", "red", [ "v0" ] ],
-    [ "temp:DQ", "esp:4", "yellow", [ "v0" ] ],
+    [ "esp:4", "temp:DQ", "yellow", [] ],
+    [ "esp:3V3", "temp:VDD", "red", [] ],
+    [ "esp:GND.2", "temp:GND", "black", [] ],
     
-    [ "pullup:1", "temp:DQ", "green", [ "v0" ] ],
-    [ "pullup:2", "temp:VDD", "green", [ "v0" ] ],
+    [ "esp:4", "r1:1", "green", [] ],
+    [ "esp:3V3", "r1:2", "red", [] ],
     
-    [ "rgb:GND", "esp:GND.2", "black", [ "v0" ] ],
-    [ "rgb:VDD", "esp:5V", "red", [ "v0" ] ],
-    [ "rgb:DIN", "esp:26", "green", [ "v0" ] ],
+    [ "esp:15", "fan_pwm:PWM", "blue", [] ],
+    [ "esp:5V", "fan_pwm:V+", "red", [] ],
+    [ "esp:GND.1", "fan_pwm:GND", "black", [] ],
     
-    [ "fan_pwm_led:A", "esp:15", "blue", [ "v0" ] ],
-    [ "fan_pwm_led:C", "esp:GND.3", "black", [ "v0" ] ],
-    
-    [ "tach_btn:1.l", "esp:GND.3", "black", [ "v0" ] ],
-    [ "tach_btn:2.l", "esp:32", "orange", [ "v0" ] ]
+    [ "esp:32", "tach_btn:1.l", "green", [] ],
+    [ "esp:GND.2", "tach_btn:2.l", "black", [] ]
   ],
   "dependencies": {}
 }
